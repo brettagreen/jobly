@@ -2,7 +2,7 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate, companyWriteWhere } = require("../helpers/sql");
+const sqlForPartialUpdate = require("../helpers/sql");
 
 /** Related functions for companies. */
 
@@ -158,5 +158,35 @@ class Company {
   }
 }
 
+function companyWriteWhere({name, min, max}) {
+  let where;
+  let values = [];
+
+  if (!name && !min && !max) {
+    return null;
+  }
+
+  if (!name && !min) {
+      where = "WHERE num_employees <= $1";
+      values.push(max);
+  } else if (!name && !max) {
+      where = "WHERE num_employees >= $1";
+      values.push(min);
+  } else if (!name) {
+      where = "WHERE num_employees >= $1 AND num_employees <= $2";
+      values.push(min, max);
+  } else if (!max && !min) {
+      where = "WHERE UPPER(name) LIKE UPPER($1)";
+      values.push(name);
+  } else if (!min) {
+    where = "WHERE UPPER(name) LIKE UPPER($1) AND num_employees <= $2";
+    values.push(name, max);
+  } else {
+    where = "WHERE UPPER(name) LIKE UPPER($1) AND num_employees >= $2";
+    values.push(name, min); 
+  }
+
+  return {where, values};
+}
 
 module.exports = Company;

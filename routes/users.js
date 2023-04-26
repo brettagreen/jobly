@@ -67,7 +67,6 @@ router.patch('/:username/password', ensureLoggedIn, async function(req, res, nex
       throw new BadRequestError(errs);
     }
     const user = await User.setPassword(req.params.username, req.body.password);
-    console.log("USER", user);
     const token = createToken(user);
     return res.json({ token });
   } catch (err) {

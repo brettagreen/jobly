@@ -2,7 +2,7 @@
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
-const { sqlForPartialUpdate, jobWriteWhere } = require("../helpers/sql");
+const sqlForPartialUpdate = require("../helpers/sql");
 
 /** Related functions for companies. */
 
@@ -151,5 +151,49 @@ class Job {
   }
 }
 
+function jobWriteWhere({title, minSalary, hasEquity}) {
+  let where;
+  let values = [];
+
+  if (!title && !minSalary && !hasEquity) {
+    return null;
+  }
+
+  if (!title && !minSalary) {
+      if (Boolean(hasEquity)) {
+        where = "WHERE equity > $1";
+        values.push(0);
+      } else {
+        return null;
+      }
+  } else if (!title && !hasEquity) {
+      where = "WHERE salary >= $1";
+      values.push(minSalary);
+  } else if (!title) {
+      if (Boolean(hasEquity)) {
+        where = "WHERE salary >= $1 AND equity > $2";
+        values.push(minSalary, 0);
+      } else {
+        where = "WHERE salary >= $1";
+        values.push(minSalary);
+      }
+  } else if (!hasEquity && !minSalary) {
+      where = "WHERE UPPER(title) LIKE UPPER($1)";
+      values.push(title);
+  } else if (!minSalary) {
+    if (Boolean(hasEquity)) {
+      where = "WHERE UPPER(title) LIKE UPPER($1) AND equity > $2";
+      values.push(title, 0);
+    } else {
+      where = "WHERE UPPER(title) LIKE UPPER($1)";
+      values.push(title);
+    }
+  } else {
+    where = "WHERE UPPER(title) LIKE UPPER($1) AND salary >= $2";
+    values.push(title, minSalary); 
+  }
+
+  return {where, values};
+}
 
 module.exports = Job;
